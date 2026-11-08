@@ -17,7 +17,7 @@ const groq = new Groq({
     apiKey: process.env.GROQ_API_KEY
 });
 
-// 2. Initialize WhatsApp client with low-memory Puppeteer flags for Render's 512MB limit
+// 2. Initialize WhatsApp client with remote web version cache and low-memory Puppeteer flags
 const client = new Client({
     authStrategy: new LocalAuth(),
     webVersionCache: {
@@ -38,11 +38,9 @@ const client = new Client({
     }
 });
 
-// 3. Display QR Code in your terminal / logs
-
-
+// 3. Display QR Code in logs
 client.on('qr', (qr) => {
-    console.log('\n--- SCAN THIS QR ---');
+    console.log('\n--- SCAN THIS QR CODE WITH YOUR WHATSAPP ---');
     qrcode.generate(qr, { small: true });
 });
 
@@ -51,18 +49,23 @@ client.on('ready', () => {
     console.log(`✅ WhatsApp Groq Bot is online and ready!`);
 });
 
-// 5. Handle incoming messages
-client.on('message', async (message) => {
-    // Ignore group chats, status updates, and broadcast channels
-    if (message.from.endsWith('@g.us') || message.isStatus || message.from.includes('newsletter')) return;
+// 5. Catch authentication errors or disconnections
+client.on('auth_failure', (msg) => {
+    console.error('❌ Authentication failure:', msg);
+});
 
-    // Ignore your own sent messages
+client.on('disconnected', (reason) => {
+    console.log('⚠️ Client was disconnected:', reason);
+});
+
+// 6. Handle incoming messages
+client.on('message', async (message) => {
+    if (message.from.endsWith('@g.us') || message.isStatus || message.from.includes('newsletter')) return;
     if (message.fromMe) return;
 
     try {
         console.log(`\n📩 Incoming from ${message.from}: "${message.body}"`);
 
-        // Generate response using Groq with your away assistant persona
         const chatCompletion = await groq.chat.completions.create({
             model: 'openai/gpt-oss-safeguard-20b',
             messages: [
@@ -76,7 +79,6 @@ client.on('message', async (message) => {
         const replyText = chatCompletion.choices[0]?.message?.content;
 
         if (replyText) {
-            // Send reply back to the chat
             await message.reply(replyText);
             console.log(`📤 Replied: "${replyText}"`);
         }
@@ -86,10 +88,10 @@ client.on('message', async (message) => {
     }
 });
 
-// 6. Start the WhatsApp client
+// 7. Start the WhatsApp client
 client.initialize();
 
-// 7. Mini HTTP Server to satisfy Render's port binding requirement
+// 8. Mini HTTP Server to satisfy port binding requirements
 const PORT = process.env.PORT || 3000;
 const server = http.createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/plain' });
