@@ -1,6 +1,5 @@
 require('dotenv').config();
 const { Client, LocalAuth } = require('whatsapp-web.js');
-const qrcode = require('qrcode-terminal');
 const Groq = require('groq-sdk');
 const http = require('http');
 
@@ -34,10 +33,11 @@ const client = new Client({
     }
 });
 
-// 3. Display QR Code in your terminal / logs
+// 3. Log raw QR string so it prints cleanly in Render logs
 client.on('qr', (qr) => {
-    console.log('\n--- SCAN THIS QR CODE WITH YOUR WHATSAPP ---');
-    qrcode.generate(qr, { small: true });
+    console.log('\n--- COPY THIS QR STRING ---');
+    console.log(qr);
+    console.log('---------------------------\n');
 });
 
 // 4. Log when connection is successful
