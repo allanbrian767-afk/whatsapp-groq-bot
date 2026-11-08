@@ -2,6 +2,7 @@ require('dotenv').config();
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const Groq = require('groq-sdk');
+const http = require('http');
 
 const systemPrompt = `You are an AI personal assistant representing Allan Brian on WhatsApp. 
 Your job is to reply to messages when Allan is away or busy. 
@@ -16,12 +17,24 @@ const groq = new Groq({
     apiKey: process.env.GROQ_API_KEY
 });
 
-// 2. Initialize WhatsApp client
+// 2. Initialize WhatsApp client with low-memory Puppeteer flags for Render's 512MB limit
 const client = new Client({
-    authStrategy: new LocalAuth()
+    authStrategy: new LocalAuth(),
+    puppeteer: {
+        headless: true,
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--disable-gpu'
+        ]
+    }
 });
 
-// 3. Display QR Code in your terminal
+// 3. Display QR Code in your terminal / logs
 client.on('qr', (qr) => {
     console.log('\n--- SCAN THIS QR CODE WITH YOUR WHATSAPP ---');
     qrcode.generate(qr, { small: true });
@@ -29,7 +42,7 @@ client.on('qr', (qr) => {
 
 // 4. Log when connection is successful
 client.on('ready', () => {
-    console.log(`✅ WhatsApp Groq Bot is online and ready! Using active model: llama-3.3-70b-versatile`);
+    console.log(`✅ WhatsApp Groq Bot is online and ready!`);
 });
 
 // 5. Handle incoming messages
@@ -43,7 +56,7 @@ client.on('message', async (message) => {
     try {
         console.log(`\n📩 Incoming from ${message.from}: "${message.body}"`);
 
-        // Generate response using Groq with your away assistant persona and stable model
+        // Generate response using Groq with your away assistant persona
         const chatCompletion = await groq.chat.completions.create({
             model: 'openai/gpt-oss-safeguard-20b',
             messages: [
@@ -67,5 +80,16 @@ client.on('message', async (message) => {
     }
 });
 
-// 6. Start the bot
+// 6. Start the WhatsApp client
 client.initialize();
+
+// 7. Mini HTTP Server to satisfy Render's port binding requirement
+const PORT = process.env.PORT || 3000;
+const server = http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/plain' });
+  res.end('WhatsApp Groq Bot is running successfully!\n');
+});
+
+server.listen(PORT, () => {
+  console.log(`🌐 HTTP server listening on port ${PORT}`);
+});
