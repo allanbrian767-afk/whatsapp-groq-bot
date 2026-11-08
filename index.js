@@ -20,6 +20,10 @@ const groq = new Groq({
 // 2. Initialize WhatsApp client with low-memory Puppeteer flags for Render's 512MB limit
 const client = new Client({
     authStrategy: new LocalAuth(),
+    webVersionCache: {
+        type: 'remote',
+        remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1015901307-alpha.html',
+    },
     puppeteer: {
         headless: true,
         args: [
