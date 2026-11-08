@@ -43,6 +43,12 @@ client.on('qr', (qr) => {
     console.log('\n--- SCAN THIS QR CODE WITH YOUR WHATSAPP ---');
     qrcode.generate(qr, { small: true });
 });
+const qrcode = require('qrcode-terminal');
+
+client.on('qr', (qr) => {
+    console.log('\n--- SCAN THIS QR ---');
+    qrcode.generate(qr, { small: true });
+});
 
 // 4. Log when connection is successful
 client.on('ready', () => {
