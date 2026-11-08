@@ -39,11 +39,7 @@ const client = new Client({
 });
 
 // 3. Display QR Code in your terminal / logs
-client.on('qr', (qr) => {
-    console.log('\n--- SCAN THIS QR CODE WITH YOUR WHATSAPP ---');
-    qrcode.generate(qr, { small: true });
-});
-const qrcode = require('qrcode-terminal');
+
 
 client.on('qr', (qr) => {
     console.log('\n--- SCAN THIS QR ---');
